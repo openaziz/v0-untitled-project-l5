@@ -17,15 +17,17 @@ import {
   BrainCircuit,
   ExternalLink,
   Settings,
+  Map,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AIProcessor } from "@/lib/ai-processor"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CodeViewer } from "@/components/code-viewer"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { EnhancedCodeViewer } from "@/components/enhanced-code-viewer"
 import { GeminiApiKeyDialog } from "@/components/gemini-api-key-dialog"
 import { WebSearchResults } from "@/components/web-search-results"
 import { DeepThinkingVisualizer } from "@/components/deep-thinking-visualizer"
+import { MindMapViewer } from "@/components/mind-map-viewer"
 import type { WebSearchResult } from "@/lib/ai-processor"
 import { getGeminiConfigState } from "@/lib/gemini-config"
 import { FormattedResponse } from "@/components/formatted-response"
@@ -38,7 +40,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [activeTab, setActiveTab] = useState<"chat" | "code" | "thinking" | "research">("chat")
+  const [activeTab, setActiveTab] = useState<"chat" | "code" | "thinking" | "research" | "mindmap">("chat")
   const [showCodeViewer, setShowCodeViewer] = useState(false)
   const [currentCode, setCurrentCode] = useState("")
   const [currentLanguage, setCurrentLanguage] = useState("javascript")
@@ -47,6 +49,8 @@ export default function ChatPage() {
   const [researchResults, setResearchResults] = useState<WebSearchResult[]>([])
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
   const [currentQuery, setCurrentQuery] = useState("")
+  const [hasMindMap, setHasMindMap] = useState(false)
+  const [mindMapId, setMindMapId] = useState("")
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -74,6 +78,15 @@ export default function ChatPage() {
     // إذا كان هناك استعلام أولي، قم بمعالجته
     if (initialQuery) {
       handleInitialQuery(initialQuery)
+    }
+
+    // التحقق من وجود خريطة ذهنية
+    if (typeof window !== "undefined") {
+      const mindMapData = localStorage.getItem("mindMapData")
+      if (mindMapData) {
+        setHasMindMap(true)
+        setMindMapId(`mind-map-${Date.now()}`)
+      }
     }
   }, [initialQuery])
 
@@ -147,6 +160,15 @@ export default function ChatPage() {
       // إذا كان الاستعلام يتعلق بالبرمجة، افتح علامة تبويب الكود
       if (isProgrammingQuery) {
         setActiveTab("code")
+      }
+
+      // التحقق من وجود خريطة ذهنية
+      if (typeof window !== "undefined") {
+        const mindMapData = localStorage.getItem("mindMapData")
+        if (mindMapData) {
+          setHasMindMap(true)
+          setMindMapId(`mind-map-${Date.now()}`)
+        }
       }
 
       // انتظار اكتمال التفكير العميق والبحث
@@ -230,6 +252,15 @@ export default function ChatPage() {
         setActiveTab("code")
       }
 
+      // التحقق من وجود خريطة ذهنية
+      if (typeof window !== "undefined") {
+        const mindMapData = localStorage.getItem("mindMapData")
+        if (mindMapData) {
+          setHasMindMap(true)
+          setMindMapId(`mind-map-${Date.now()}`)
+        }
+      }
+
       // انتظار اكتمال التفكير العميق والبحث
       await Promise.all([thinkingPromise, searchPromise])
     } catch (error) {
@@ -277,23 +308,27 @@ export default function ChatPage() {
             المحادثة
           </TabsTrigger>
           <TabsTrigger value="code" className="flex-1">
-            <Code className="h-4 w-4 mr-1" />
+            <Code className="h-4 w-4 ml-1" />
             الكود
           </TabsTrigger>
           <TabsTrigger value="thinking" className="flex-1">
-            <BrainCircuit className="h-4 w-4 mr-1" />
+            <BrainCircuit className="h-4 w-4 ml-1" />
             التفكير العميق
           </TabsTrigger>
           <TabsTrigger value="research" className="flex-1">
-            <Globe className="h-4 w-4 mr-1" />
+            <Globe className="h-4 w-4 ml-1" />
             البحث
           </TabsTrigger>
+          {hasMindMap && (
+            <TabsTrigger value="mindmap" className="flex-1">
+              <Map className="h-4 w-4 ml-1" />
+              الخريطة الذهنية
+            </TabsTrigger>
+          )}
         </TabsList>
-      </Tabs>
 
-      {/* Chat Messages */}
-      {activeTab === "chat" && (
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Chat Messages */}
+        <TabsContent value="chat" className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
               <Image src="/images/wolf-logo.png" alt="WOLF" width={60} height={60} className="mb-4 opacity-50" />
@@ -304,7 +339,9 @@ export default function ChatPage() {
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[80%] ${message.role === "user" ? "bg-blue-600" : "bg-zinc-800"} rounded-lg p-3`}
+                    className={`max-w-[80%] ${
+                      message.role === "user" ? "bg-blue-600" : "bg-zinc-800"
+                    } rounded-lg p-3 shadow-lg`}
                   >
                     {message.role === "assistant" ? (
                       <FormattedResponse content={message.content} />
@@ -384,35 +421,29 @@ export default function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
           )}
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Code Viewer */}
-      {activeTab === "code" && (
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Code Viewer */}
+        <TabsContent value="code" className="flex-1 overflow-y-auto p-4">
           <div className="bg-zinc-900 rounded-lg p-4 h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">عارض الكود</h2>
-              <Button variant="outline" size="sm" onClick={() => openInVisualStudio(currentCode, currentLanguage)}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                فتح في Visual Studio
-              </Button>
             </div>
-            <CodeViewer code={currentCode} language={currentLanguage} />
+            <EnhancedCodeViewer
+              code={currentCode}
+              language={currentLanguage}
+              onOpenInVisualStudio={openInVisualStudio}
+            />
           </div>
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Deep Thinking */}
-      {activeTab === "thinking" && (
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Deep Thinking */}
+        <TabsContent value="thinking" className="flex-1 overflow-y-auto p-4">
           <DeepThinkingVisualizer steps={thinkingSteps} isThinking={isThinking} query={currentQuery} />
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Web Research */}
-      {activeTab === "research" && (
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Web Research */}
+        <TabsContent value="research" className="flex-1 overflow-y-auto p-4">
           <div className="bg-zinc-900 rounded-lg p-4">
             <WebSearchResults
               results={researchResults}
@@ -421,8 +452,15 @@ export default function ChatPage() {
               currentQuery={currentQuery}
             />
           </div>
-        </div>
-      )}
+        </TabsContent>
+
+        {/* Mind Map */}
+        {hasMindMap && (
+          <TabsContent value="mindmap" className="flex-1 overflow-y-auto p-4">
+            <MindMapViewer mindMapId={mindMapId} />
+          </TabsContent>
+        )}
+      </Tabs>
 
       {/* Input Field */}
       <div className="p-4 border-t border-zinc-800">

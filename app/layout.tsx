@@ -1,9 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
-
-const inter = Inter({ subsets: ["latin"] })
+import "./arabic-support.css"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 
 export const metadata: Metadata = {
   title: "WOLF - واجهة المستخدم",
@@ -18,7 +17,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={inter.className}>{children}</body>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+      </head>
+      <body className="font-tajawal">
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeSwitcher />
+        </div>
+        {children}
+      </body>
     </html>
   )
 }

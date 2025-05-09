@@ -1,0 +1,286 @@
+/* دعم اللغة العربية */
+
+/* تحسين محاذاة النصوص العربية */
+html[dir="rtl"] {
+  text-align: right;
+}
+
+/* تحسين الخطوط العربية */
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Tajawal";
+  src: url("/fonts/Tajawal-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cairo";
+  src: url("/fonts/Cairo-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cairo";
+  src: url("/fonts/Cairo-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Almarai";
+  src: url("/fonts/Almarai-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Almarai";
+  src: url("/fonts/Almarai-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Amiri";
+  src: url("/fonts/Amiri-Regular.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Amiri";
+  src: url("/fonts/Amiri-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* تحسين أحجام الخطوط */
+html[dir="rtl"] h1 {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+}
+
+html[dir="rtl"] h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+html[dir="rtl"] h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+html[dir="rtl"] p,
+html[dir="rtl"] li {
+  line-height: 1.75;
+}
+
+/* تحسين المسافات بين الحروف */
+html[dir="rtl"] * {
+  letter-spacing: 0;
+}
+
+/* تحسين محاذاة الأزرار والأيقونات */
+html[dir="rtl"] button svg,
+html[dir="rtl"] .button svg {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+/* تحسين محاذاة القوائم */
+html[dir="rtl"] ul,
+html[dir="rtl"] ol {
+  padding-right: 1.5rem;
+  padding-left: 0;
+}
+
+/* تحسين محاذاة الحقول */
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+  text-align: right;
+}
+
+/* تحسين محاذاة الجداول */
+html[dir="rtl"] th,
+html[dir="rtl"] td {
+  text-align: right;
+}
+
+/* تحسين عرض الكود */
+html[dir="rtl"] pre,
+html[dir="rtl"] code {
+  direction: ltr;
+  text-align: left;
+}
+
+/* تحسين الهوامش والحدود */
+html[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+html[dir="rtl"] .rtl-swap-margin {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+/* تحسين التمرير */
+html[dir="rtl"] .overflow-x-auto {
+  direction: rtl;
+}
+
+/* تحسين الظلال */
+html[dir="rtl"] .shadow-left {
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+/* تحسين الرسوم البيانية والخرائط الذهنية */
+html[dir="rtl"] .chart-container,
+html[dir="rtl"] .mind-map-container {
+  direction: ltr;
+}
+
+/* تحسين الأنيميشن */
+@keyframes slide-in-rtl {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+html[dir="rtl"] .animate-slide-in {
+  animation: slide-in-rtl 0.3s ease-out;
+}
+
+/* تحسين التباين العالي */
+html[data-color-scheme="high-contrast"] {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 80%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 40%;
+  --input: 0 0% 40%;
+  --ring: 0 0% 100%;
+}
+
+/* نظام الألوان الأزرق */
+html[data-color-scheme="blue"] {
+  --background: 210 50% 3.9%;
+  --foreground: 210 20% 98%;
+  --card: 210 50% 3.9%;
+  --card-foreground: 210 20% 98%;
+  --popover: 210 50% 3.9%;
+  --popover-foreground: 210 20% 98%;
+  --primary: 210 100% 50%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 210 50% 14.9%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 210 50% 14.9%;
+  --muted-foreground: 210 20% 63.9%;
+  --accent: 210 50% 14.9%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 210 50% 14.9%;
+  --input: 210 50% 14.9%;
+  --ring: 210 100% 50%;
+}
+
+/* نظام الألوان الأخضر */
+html[data-color-scheme="green"] {
+  --background: 150 50% 3.9%;
+  --foreground: 150 20% 98%;
+  --card: 150 50% 3.9%;
+  --card-foreground: 150 20% 98%;
+  --popover: 150 50% 3.9%;
+  --popover-foreground: 150 20% 98%;
+  --primary: 150 100% 50%;
+  --primary-foreground: 150 20% 98%;
+  --secondary: 150 50% 14.9%;
+  --secondary-foreground: 150 20% 98%;
+  --muted: 150 50% 14.9%;
+  --muted-foreground: 150 20% 63.9%;
+  --accent: 150 50% 14.9%;
+  --accent-foreground: 150 20% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 150 20% 98%;
+  --border: 150 50% 14.9%;
+  --input: 150 50% 14.9%;
+  --ring: 150 100% 50%;
+}
+
+/* نظام الألوان الأرجواني */
+html[data-color-scheme="purple"] {
+  --background: 270 50% 3.9%;
+  --foreground: 270 20% 98%;
+  --card: 270 50% 3.9%;
+  --card-foreground: 270 20% 98%;
+  --popover: 270 50% 3.9%;
+  --popover-foreground: 270 20% 98%;
+  --primary: 270 100% 50%;
+  --primary-foreground: 270 20% 98%;
+  --secondary: 270 50% 14.9%;
+  --secondary-foreground: 270 20% 98%;
+  --muted: 270 50% 14.9%;
+  --muted-foreground: 270 20% 63.9%;
+  --accent: 270 50% 14.9%;
+  --accent-foreground: 270 20% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 270 20% 98%;
+  --border: 270 50% 14.9%;
+  --input: 270 50% 14.9%;
+  --ring: 270 100% 50%;
+}
+
+/* نظام الألوان الكهرماني */
+html[data-color-scheme="amber"] {
+  --background: 30 50% 3.9%;
+  --foreground: 30 20% 98%;
+  --card: 30 50% 3.9%;
+  --card-foreground: 30 20% 98%;
+  --popover: 30 50% 3.9%;
+  --popover-foreground: 30 20% 98%;
+  --primary: 30 100% 50%;
+  --primary-foreground: 30 20% 98%;
+  --secondary: 30 50% 14.9%;
+  --secondary-foreground: 30 20% 98%;
+  --muted: 30 50% 14.9%;
+  --muted-foreground: 30 20% 63.9%;
+  --accent: 30 50% 14.9%;
+  --accent-foreground: 30 20% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 30 20% 98%;
+  --border: 30 50% 14.9%;
+  --input: 30 50% 14.9%;
+  --ring: 30 100% 50%;
+}
