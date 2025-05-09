@@ -28,6 +28,7 @@ import { WebSearchResults } from "@/components/web-search-results"
 import { DeepThinkingVisualizer } from "@/components/deep-thinking-visualizer"
 import type { WebSearchResult } from "@/lib/ai-processor"
 import { getGeminiConfigState } from "@/lib/gemini-config"
+import { FormattedResponse } from "@/components/formatted-response"
 
 export default function ChatPage() {
   const router = useRouter()
@@ -305,7 +306,11 @@ export default function ChatPage() {
                   <div
                     className={`max-w-[80%] ${message.role === "user" ? "bg-blue-600" : "bg-zinc-800"} rounded-lg p-3`}
                   >
-                    <div className="text-sm">{message.content}</div>
+                    {message.role === "assistant" ? (
+                      <FormattedResponse content={message.content} />
+                    ) : (
+                      <div className="text-sm">{message.content}</div>
+                    )}
 
                     {message.hasCode && (
                       <div className="mt-3 bg-zinc-900 p-2 rounded text-xs font-mono overflow-x-auto">

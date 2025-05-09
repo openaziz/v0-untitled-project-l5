@@ -66,10 +66,20 @@ export class AIProcessor {
         console.log("استخدام Google Gemini لمعالجة الاستعلام")
 
         // إضافة توجيه النظام بناءً على شخصية البوت
-        const systemPrompt = this.getSystemPromptForPersonality()
+        const systemPrompt =
+          this.getSystemPromptForPersonality() +
+          `
+      
+      هام: قدم إجاباتك بتنسيق واضح ومنظم. لا تستخدم علامات النجمة (**) للتنسيق.
+      استخدم فقرات واضحة وعناوين مرقمة عند الحاجة. قدم إجابات مباشرة وعملية.
+      تجنب الإطالة غير الضرورية وركز على تقديم حلول محددة وخطوات عملية.
+      `
 
         // استخدام Gemini لتوليد الاستجابة
         const response = await this.geminiService.generateContent(query, systemPrompt)
+
+        // تنظيف النص من علامات النجمة وتحسين التنسيق
+        const cleanedResponse = this.cleanResponseFormatting(response)
 
         // تحليل نوع الاستعلام
         const queryType = this.analyzeQueryType(query)
@@ -83,7 +93,7 @@ export class AIProcessor {
           this.visualStudioService.openInVisualStudio(codeResult.code, codeResult.language)
         }
 
-        return response
+        return cleanedResponse
       } catch (error) {
         console.error("خطأ في استخدام Gemini:", error)
         // في حالة فشل Gemini، استخدم الطريقة الاحتياطية
@@ -121,6 +131,23 @@ export class AIProcessor {
 
     // تطبيق شخصية البوت على الاستجابة
     return this.applyPersonality(response)
+  }
+
+  // إضافة دالة جديدة لتنظيف تنسيق الاستجابة
+  private cleanResponseFormatting(text: string): string {
+    // إزالة علامات النجمة المزدوجة وتحويلها إلى تنسيق مناسب
+    let cleaned = text
+      .replace(/\*\*(.*?)\*\*/g, "$1") // إزالة علامات النجمة المزدوجة
+      .replace(/\n\s*\d+\.\s*/g, "\n\n$&") // إضافة مسافة قبل العناصر المرقمة
+      .replace(/\n\s*•\s*/g, "\n\n$&") // إضافة مسافة قبل النقاط
+
+    // تحسين تنسيق الفقرات
+    cleaned = cleaned
+      .split("\n")
+      .map((line) => line.trim())
+      .join("\n")
+
+    return cleaned
   }
 
   /**

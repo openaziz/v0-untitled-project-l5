@@ -18,6 +18,19 @@ export class GeminiService {
    */
   async generateContent(prompt: string, systemPrompt?: string): Promise<string> {
     try {
+      // إضافة توجيهات التنسيق إلى النظام
+      const formattingInstructions = `
+    قدم إجابات مباشرة ومختصرة وعملية.
+    استخدم فقرات قصيرة وواضحة.
+    استخدم عناوين مرقمة للخطوات والنقاط المهمة.
+    تجنب استخدام علامات النجمة (**) للتنسيق.
+    ركز على الحلول العملية والخطوات المحددة.
+    `
+
+      const enhancedSystemPrompt = systemPrompt
+        ? `${systemPrompt}\n\n${formattingInstructions}`
+        : formattingInstructions
+
       const response = await fetch(GEMINI_API_ENDPOINT, {
         method: "POST",
         headers: {
@@ -25,7 +38,7 @@ export class GeminiService {
         },
         body: JSON.stringify({
           prompt,
-          systemPrompt,
+          systemPrompt: enhancedSystemPrompt,
           model: this.config.model,
           maxTokens: this.config.maxTokens,
           temperature: this.config.temperature,
