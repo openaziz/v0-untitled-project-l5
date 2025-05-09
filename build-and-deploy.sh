@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# سكربت لإعداد وبناء ونشر تطبيق WOLF
+# سكربت ذكي لإعداد وبناء ونشر تطبيق WOLF
 # يقوم هذا السكربت بالخطوات التالية:
-# 1. التحقق من البيئة وتثبيت التبعيات
+# 1. التحقق من البيئة وتثبيت جميع التبعيات تلقائيًا
 # 2. تثبيت إضافات Capacitor
 # 3. إعداد Capacitor
 # 4. بناء تطبيق Android (APK)
@@ -14,6 +14,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # وظيفة للطباعة مع لون
@@ -21,77 +22,433 @@ print_color() {
   printf "${1}${2}${NC}\n"
 }
 
+# وظيفة للطباعة مع لون وإطار
+print_header() {
+  local text="$1"
+  local color="$2"
+  local length=${#text}
+  local border=$(printf '=%.0s' $(seq 1 $((length + 10))))
+  
+  echo ""
+  printf "${color}${border}${NC}\n"
+  printf "${color}=====  ${text}  =====${NC}\n"
+  printf "${color}${border}${NC}\n"
+}
+
 # وظيفة للتحقق من نجاح الأمر السابق
 check_success() {
   if [ $? -eq 0 ]; then
     print_color "$GREEN" "✓ $1"
+    return 0
   else
     print_color "$RED" "✗ $1"
     print_color "$RED" "حدث خطأ. يرجى التحقق من السجل أعلاه."
-    exit 1
+    return 1
   fi
 }
 
 # وظيفة للتحقق من وجود أمر
 check_command() {
-  if ! command -v $1 &> /dev/null; then
-    print_color "$RED" "الأمر $1 غير موجود. يرجى تثبيته أولاً."
+  if command -v $1 &> /dev/null; then
+    return 0
+  else
     return 1
   fi
-  return 0
+}
+
+# وظيفة لتثبيت حزمة باستخدام مدير الحزم المناسب
+install_package() {
+  local package_name="$1"
+  local display_name="${2:-$1}"
+  
+  print_color "$YELLOW" "جاري تثبيت $display_name..."
+  
+  if [ "$IS_TERMUX" = true ]; then
+    pkg install -y $package_name
+  elif [ "$IS_ARCH" = true ]; then
+    sudo pacman -S --noconfirm $package_name
+  elif [ "$IS_DEBIAN" = true ]; then
+    sudo apt-get install -y $package_name
+  elif [ "$IS_FEDORA" = true ]; then
+    sudo dnf install -y $package_name
+  else
+    print_color "$RED" "لا يمكن تحديد مدير الحزم المناسب لتثبيت $display_name"
+    return 1
+  fi
+  
+  if check_success "تم تثبيت $display_name"; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت Node.js
+install_nodejs() {
+  if [ "$IS_TERMUX" = true ]; then
+    install_package nodejs "Node.js"
+  elif [ "$IS_ARCH" = true ]; then
+    install_package nodejs "Node.js"
+  elif [ "$IS_DEBIAN" = true ]; then
+    # تثبيت Node.js من NodeSource
+    if ! check_command curl; then
+      install_package curl "curl"
+    fi
+    
+    print_color "$YELLOW" "إضافة مستودع NodeSource..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    check_success "تمت إضافة مستودع NodeSource"
+    
+    install_package nodejs "Node.js"
+  elif [ "$IS_FEDORA" = true ]; then
+    install_package nodejs "Node.js"
+  else
+    print_color "$RED" "لا يمكن تثبيت Node.js تلقائيًا. يرجى تثبيته يدويًا."
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت Java JDK
+install_java() {
+  if [ "$IS_TERMUX" = true ]; then
+    install_package openjdk-17 "Java JDK"
+  elif [ "$IS_ARCH" = true ]; then
+    install_package jdk-openjdk "Java JDK"
+  elif [ "$IS_DEBIAN" = true ]; then
+    install_package openjdk-17-jdk "Java JDK"
+  elif [ "$IS_FEDORA" = true ]; then
+    install_package java-17-openjdk-devel "Java JDK"
+  else
+    print_color "$RED" "لا يمكن تثبيت Java JDK تلقائيًا. يرجى تثبيته يدويًا."
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت Android SDK
+install_android_sdk() {
+  if [ "$IS_TERMUX" = true ]; then
+    print_color "$YELLOW" "تثبيت Android SDK في Termux..."
+    
+    # إنشاء مجلد Android SDK
+    mkdir -p $HOME/android-sdk
+    
+    # تنزيل أدوات Android SDK
+    if ! check_command wget; then
+      install_package wget "wget"
+    fi
+    
+    # تنزيل Android SDK Command Line Tools
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O android-sdk-tools.zip
+    
+    # فك ضغط الملف
+    if ! check_command unzip; then
+      install_package unzip "unzip"
+    fi
+    
+    unzip -q android-sdk-tools.zip -d $HOME/android-sdk
+    check_success "تم تنزيل وفك ضغط Android SDK Command Line Tools"
+    
+    # تنظيف
+    rm android-sdk-tools.zip
+    
+    # إعداد متغيرات البيئة
+    export ANDROID_HOME=$HOME/android-sdk
+    export PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin
+    
+    # قبول التراخيص
+    yes | sdkmanager --licenses
+    
+    # تثبيت الأدوات الأساسية
+    sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+    check_success "تم تثبيت Android SDK"
+    
+    # إضافة متغيرات البيئة إلى .bashrc
+    echo "export ANDROID_HOME=\$HOME/android-sdk" >> $HOME/.bashrc
+    echo "export PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/bin:\$ANDROID_HOME/platform-tools" >> $HOME/.bashrc
+    
+  elif [ "$IS_ARCH" = true ] || [ "$IS_DEBIAN" = true ] || [ "$IS_FEDORA" = true ]; then
+    print_color "$YELLOW" "تثبيت Android SDK..."
+    
+    # إنشاء مجلد Android SDK
+    mkdir -p $HOME/Android/Sdk
+    
+    # تنزيل أدوات Android SDK
+    if ! check_command wget; then
+      if [ "$IS_ARCH" = true ]; then
+        install_package wget "wget"
+      elif [ "$IS_DEBIAN" = true ]; then
+        install_package wget "wget"
+      elif [ "$IS_FEDORA" = true ]; then
+        install_package wget "wget"
+      fi
+    fi
+    
+    # تنزيل Android SDK Command Line Tools
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O android-sdk-tools.zip
+    
+    # فك ضغط الملف
+    if ! check_command unzip; then
+      if [ "$IS_ARCH" = true ]; then
+        install_package unzip "unzip"
+      elif [ "$IS_DEBIAN" = true ]; then
+        install_package unzip "unzip"
+      elif [ "$IS_FEDORA" = true ]; then
+        install_package unzip "unzip"
+      fi
+    fi
+    
+    unzip -q android-sdk-tools.zip -d $HOME/Android/Sdk
+    check_success "تم تنزيل وفك ضغط Android SDK Command Line Tools"
+    
+    # تنظيف
+    rm android-sdk-tools.zip
+    
+    # إعداد متغيرات البيئة
+    export ANDROID_HOME=$HOME/Android/Sdk
+    export PATH=$PATH:$ANDROID_HOME/cmdline-tools/bin
+    
+    # قبول التراخيص
+    yes | sdkmanager --licenses
+    
+    # تثبيت الأدوات الأساسية
+    sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+    check_success "تم تثبيت Android SDK"
+    
+    # إضافة متغيرات البيئة إلى .bashrc
+    echo "export ANDROID_HOME=\$HOME/Android/Sdk" >> $HOME/.bashrc
+    echo "export PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/bin:\$ANDROID_HOME/platform-tools" >> $HOME/.bashrc
+    
+  else
+    print_color "$RED" "لا يمكن تثبيت Android SDK تلقائيًا. يرجى تثبيته يدويًا."
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت Gradle
+install_gradle() {
+  if [ "$IS_TERMUX" = true ]; then
+    install_package gradle "Gradle"
+  elif [ "$IS_ARCH" = true ]; then
+    install_package gradle "Gradle"
+  elif [ "$IS_DEBIAN" = true ]; then
+    install_package gradle "Gradle"
+  elif [ "$IS_FEDORA" = true ]; then
+    install_package gradle "Gradle"
+  else
+    print_color "$RED" "لا يمكن تثبيت Gradle تلقائيًا. يرجى تثبيته يدويًا."
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت Git
+install_git() {
+  if [ "$IS_TERMUX" = true ]; then
+    install_package git "Git"
+  elif [ "$IS_ARCH" = true ]; then
+    install_package git "Git"
+  elif [ "$IS_DEBIAN" = true ]; then
+    install_package git "Git"
+  elif [ "$IS_FEDORA" = true ]; then
+    install_package git "Git"
+  else
+    print_color "$RED" "لا يمكن تثبيت Git تلقائيًا. يرجى تثبيته يدويًا."
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت GitHub CLI
+install_github_cli() {
+  if [ "$IS_TERMUX" = true ]; then
+    install_package gh "GitHub CLI"
+  elif [ "$IS_ARCH" = true ]; then
+    install_package github-cli "GitHub CLI"
+  elif [ "$IS_DEBIAN" = true ]; then
+    # تثبيت GitHub CLI من المستودع الرسمي
+    if ! check_command curl; then
+      install_package curl "curl"
+    fi
+    
+    print_color "$YELLOW" "إضافة مستودع GitHub CLI..."
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    sudo apt-get update
+    check_success "تمت إضافة مستودع GitHub CLI"
+    
+    install_package gh "GitHub CLI"
+  elif [ "$IS_FEDORA" = true ]; then
+    install_package gh "GitHub CLI"
+  else
+    print_color "$RED" "لا يمكن تثبيت GitHub CLI تلقائيًا. يرجى تثبيته يدويًا."
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت npm
+install_npm() {
+  if [ "$IS_TERMUX" = true ]; then
+    install_package nodejs "npm (مع Node.js)"
+  elif [ "$IS_ARCH" = true ]; then
+    install_package npm "npm"
+  elif [ "$IS_DEBIAN" = true ]; then
+    install_package npm "npm"
+  elif [ "$IS_FEDORA" = true ]; then
+    install_package npm "npm"
+  else
+    print_color "$RED" "لا يمكن تثبيت npm تلقائيًا. يرجى تثبيته يدويًا."
+    return 1
+  fi
+}
+
+# وظيفة لتثبيت keytool
+install_keytool() {
+  # keytool يأتي مع Java JDK
+  install_java
+}
+
+# وظيفة لتثبيت apksigner
+install_apksigner() {
+  # apksigner يأتي مع Android SDK
+  install_android_sdk
+}
+
+# وظيفة لتثبيت جميع التبعيات الأساسية
+install_all_dependencies() {
+  print_header "تثبيت جميع التبعيات الأساسية" "$BLUE"
+  
+  # تثبيت Node.js و npm
+  if ! check_command node; then
+    install_nodejs
+  else
+    print_color "$GREEN" "✓ Node.js موجود بالفعل ($(node --version))"
+  fi
+  
+  if ! check_command npm; then
+    install_npm
+  else
+    print_color "$GREEN" "✓ npm موجود بالفعل ($(npm --version))"
+  fi
+  
+  # تثبيت Java JDK
+  if ! check_command java; then
+    install_java
+  else
+    print_color "$GREEN" "✓ Java موجود بالفعل ($(java -version 2>&1 | head -n 1))"
+  fi
+  
+  # تثبيت Git
+  if ! check_command git; then
+    install_git
+  else
+    print_color "$GREEN" "✓ Git موجود بالفعل ($(git --version))"
+  fi
+  
+  # تثبيت keytool
+  if ! check_command keytool; then
+    install_keytool
+  else
+    print_color "$GREEN" "✓ keytool موجود بالفعل"
+  fi
+  
+  # تثبيت Gradle
+  if ! check_command gradle; then
+    install_gradle
+  else
+    print_color "$GREEN" "✓ Gradle موجود بالفعل ($(gradle --version | head -n 1))"
+  fi
+  
+  # تثبيت Android SDK (اختياري)
+  if [ -z "$ANDROID_HOME" ]; then
+    print_color "$YELLOW" "هل ترغب في تثبيت Android SDK؟ (y/n)"
+    read install_android_sdk_choice
+    
+    if [ "$install_android_sdk_choice" = "y" ] || [ "$install_android_sdk_choice" = "Y" ]; then
+      install_android_sdk
+    else
+      print_color "$YELLOW" "تخطي تثبيت Android SDK"
+    fi
+  else
+    print_color "$GREEN" "✓ Android SDK موجود بالفعل في $ANDROID_HOME"
+  fi
+  
+  # تثبيت GitHub CLI (اختياري)
+  if ! check_command gh; then
+    print_color "$YELLOW" "هل ترغب في تثبيت GitHub CLI؟ (y/n)"
+    read install_github_cli_choice
+    
+    if [ "$install_github_cli_choice" = "y" ] || [ "$install_github_cli_choice" = "Y" ]; then
+      install_github_cli
+    else
+      print_color "$YELLOW" "تخطي تثبيت GitHub CLI"
+    fi
+  else
+    print_color "$GREEN" "✓ GitHub CLI موجود بالفعل ($(gh --version | head -n 1))"
+  fi
+  
+  print_color "$GREEN" "تم تثبيت جميع التبعيات الأساسية بنجاح!"
 }
 
 # التحقق من البيئة
-print_color "$BLUE" "=== التحقق من البيئة ==="
+print_header "التحقق من البيئة" "$BLUE"
+
+# تحديد نوع البيئة
 IS_TERMUX=false
+IS_ARCH=false
+IS_DEBIAN=false
+IS_FEDORA=false
+
 if [ -d "/data/data/com.termux" ] || [ -n "$TERMUX_VERSION" ]; then
   IS_TERMUX=true
   print_color "$YELLOW" "تم اكتشاف بيئة Termux"
-fi
-
-# التحقق من وجود الأوامر الأساسية
-MISSING_DEPS=false
-for cmd in node npm java keytool; do
-  if ! check_command $cmd; then
-    MISSING_DEPS=true
-  fi
-done
-
-if [ "$MISSING_DEPS" = true ]; then
-  print_color "$YELLOW" "تثبيت التبعيات المفقودة..."
+elif [ -f "/etc/arch-release" ] || [ -f "/etc/artix-release" ]; then
+  IS_ARCH=true
+  print_color "$YELLOW" "تم اكتشاف توزيعة Arch/Artix Linux"
+elif [ -f "/etc/debian_version" ] || [ -f "/etc/ubuntu_version" ] || command -v apt &> /dev/null; then
+  IS_DEBIAN=true
+  print_color "$YELLOW" "تم اكتشاف توزيعة Debian/Ubuntu"
+elif [ -f "/etc/fedora-release" ] || command -v dnf &> /dev/null; then
+  IS_FEDORA=true
+  print_color "$YELLOW" "تم اكتشاف توزيعة Fedora"
+else
+  print_color "$YELLOW" "لم يتم التعرف على نوع التوزيعة. سيتم محاولة اكتشاف مدير الحزم."
   
-  if [ "$IS_TERMUX" = true ]; then
-    # تثبيت التبعيات في Termux
-    pkg update -y
-    pkg install -y nodejs openjdk-17 git
-    check_success "تم تثبيت التبعيات في Termux"
+  if command -v apt &> /dev/null; then
+    IS_DEBIAN=true
+    print_color "$YELLOW" "تم اكتشاف مدير الحزم apt"
+  elif command -v dnf &> /dev/null; then
+    IS_FEDORA=true
+    print_color "$YELLOW" "تم اكتشاف مدير الحزم dnf"
+  elif command -v pacman &> /dev/null; then
+    IS_ARCH=true
+    print_color "$YELLOW" "تم اكتشاف مدير الحزم pacman"
   else
-    # تحديد نوع التوزيعة
-    if [ -f "/etc/artix-release" ]; then
-      print_color "$YELLOW" "تم اكتشاف توزيعة Artix Linux"
-      sudo pacman -Syu --noconfirm
-      sudo pacman -S --noconfirm nodejs npm jdk-openjdk git
-      check_success "تم تثبيت التبعيات في Artix Linux"
-    elif [ -f "/etc/arch-release" ]; then
-      sudo pacman -Syu --noconfirm
-      sudo pacman -S --noconfirm nodejs npm jdk-openjdk git
-      check_success "تم تثبيت التبعيات في Arch Linux"
-    elif command -v apt &> /dev/null; then
-      sudo apt update
-      sudo apt install -y nodejs npm openjdk-17-jdk git
-      check_success "تم تثبيت التبعيات باستخدام apt"
-    elif command -v dnf &> /dev/null; then
-      sudo dnf install -y nodejs npm java-17-openjdk-devel git
-      check_success "تم تثبيت التبعيات باستخدام dnf"
-    else
-      print_color "$RED" "لم يتم التعرف على مدير الحزم. يرجى تثبيت nodejs و npm و java و git يدويًا."
-      exit 1
-    fi
+    print_color "$RED" "لم يتم التعرف على مدير الحزم. قد تحتاج إلى تثبيت التبعيات يدويًا."
   fi
 fi
+
+# تحديث مدير الحزم
+if [ "$IS_TERMUX" = true ]; then
+  print_color "$YELLOW" "تحديث مدير الحزم..."
+  pkg update -y
+  check_success "تم تحديث مدير الحزم"
+elif [ "$IS_ARCH" = true ]; then
+  print_color "$YELLOW" "تحديث مدير الحزم..."
+  sudo pacman -Syu --noconfirm
+  check_success "تم تحديث مدير الحزم"
+elif [ "$IS_DEBIAN" = true ]; then
+  print_color "$YELLOW" "تحديث مدير الحزم..."
+  sudo apt-get update
+  check_success "تم تحديث مدير الحزم"
+elif [ "$IS_FEDORA" = true ]; then
+  print_color "$YELLOW" "تحديث مدير الحزم..."
+  sudo dnf update -y
+  check_success "تم تحديث مدير الحزم"
+fi
+
+# تثبيت جميع التبعيات
+install_all_dependencies
 
 # 1. تثبيت تبعيات Node.js
-print_color "$BLUE" "=== تثبيت تبعيات Node.js ==="
+print_header "تثبيت تبعيات Node.js" "$BLUE"
 npm install
 check_success "تم تثبيت تبعيات Node.js"
 
@@ -100,17 +457,19 @@ if ! check_command cap; then
   print_color "$YELLOW" "تثبيت Capacitor CLI عالميًا..."
   npm install -g @capacitor/cli
   check_success "تم تثبيت Capacitor CLI"
+else
+  print_color "$GREEN" "✓ Capacitor CLI موجود بالفعل ($(cap --version))"
 fi
 
 # 2. تثبيت إضافات Capacitor
-print_color "$BLUE" "=== تثبيت إضافات Capacitor ==="
+print_header "تثبيت إضافات Capacitor" "$BLUE"
 npm install @capacitor/core @capacitor/android @capacitor/ios
 npm install @capacitor/push-notifications @capacitor/local-notifications @capacitor/splash-screen
 npm install @capacitor/biometric @capacitor/app-launcher @capacitor/device @capacitor/storage
 check_success "تم تثبيت إضافات Capacitor"
 
 # 3. إعداد Capacitor
-print_color "$BLUE" "=== إعداد Capacitor ==="
+print_header "إعداد Capacitor" "$BLUE"
 
 # التحقق مما إذا كان Android موجودًا بالفعل
 if [ ! -d "android" ]; then
@@ -122,7 +481,7 @@ else
 fi
 
 # 4. بناء المشروع
-print_color "$BLUE" "=== بناء المشروع ==="
+print_header "بناء المشروع" "$BLUE"
 npm run build
 check_success "تم بناء المشروع"
 
@@ -138,7 +497,7 @@ check_success "تمت مزامنة الملفات مع Capacitor"
 
 # 5. إنشاء مفتاح التوقيع إذا لم يكن موجودًا
 if [ ! -f "wolf.keystore" ]; then
-  print_color "$BLUE" "=== إنشاء مفتاح التوقيع ==="
+  print_header "إنشاء مفتاح التوقيع" "$BLUE"
   
   # استخدام طريقة مختلفة لإنشاء المفتاح في Termux
   if [ "$IS_TERMUX" = true ]; then
@@ -158,12 +517,22 @@ else
 fi
 
 # 6. إنشاء موارد شاشة البداية
-print_color "$BLUE" "=== إنشاء موارد شاشة البداية ==="
+print_header "إنشاء موارد شاشة البداية" "$BLUE"
+
+# تثبيت capacitor-assets إذا لم يكن موجودًا
+if ! check_command capacitor-assets; then
+  print_color "$YELLOW" "تثبيت capacitor-assets..."
+  npm install -g @capacitor/assets
+  check_success "تم تثبيت capacitor-assets"
+else
+  print_color "$GREEN" "✓ capacitor-assets موجود بالفعل"
+fi
+
 npx capacitor-assets generate --splashBackgroundColor "#000000" --splashBackgroundDark "#000000" --iconBackgroundColor "#000000" --iconBackgroundDark "#000000"
 check_success "تم إنشاء موارد شاشة البداية"
 
 # 7. تكوين ميزات الأمان في Android
-print_color "$BLUE" "=== تكوين ميزات الأمان في Android ==="
+print_header "تكوين ميزات الأمان في Android" "$BLUE"
 
 # إضافة تكوين ProGuard لتعتيم الكود
 if [ -d "android/app" ]; then
@@ -215,7 +584,7 @@ EOL
 fi
 
 # 8. بناء APK
-print_color "$BLUE" "=== بناء APK ==="
+print_header "بناء APK" "$BLUE"
 
 # التحقق من وجود Gradle
 if [ ! -f "android/gradlew" ]; then
@@ -247,7 +616,7 @@ check_success "تم نسخ APK إلى مجلد release"
 cd ..
 
 # توقيع APK باستخدام apksigner إذا كان متاحًا (للتأكد من التوقيع الصحيح)
-if command -v apksigner &> /dev/null; then
+if check_command apksigner; then
   print_color "$YELLOW" "التحقق من توقيع APK باستخدام apksigner..."
   apksigner verify --verbose release/wolf-app.apk
   check_success "تم التحقق من توقيع APK"
@@ -256,7 +625,7 @@ else
 fi
 
 # 9. إنشاء ملف معلومات الإصدار
-print_color "$BLUE" "=== إنشاء ملف معلومات الإصدار ==="
+print_header "إنشاء ملف معلومات الإصدار" "$BLUE"
 
 # الحصول على تاريخ الإصدار
 RELEASE_DATE=$(date +"%Y-%m-%d")
@@ -308,12 +677,16 @@ EOL
 check_success "تم إنشاء ملف معلومات الإصدار"
 
 # 10. نشر المشروع على GitHub (اختياري)
+print_header "نشر المشروع على GitHub (اختياري)" "$BLUE"
 print_color "$YELLOW" "هل ترغب في نشر المشروع على GitHub؟ (y/n)"
 read publish_to_github
 
 if [ "$publish_to_github" = "y" ] || [ "$publish_to_github" = "Y" ]; then
-  print_color "$BLUE" "=== نشر المشروع على GitHub ==="
-
+  # التحقق من وجود Git
+  if ! check_command git; then
+    install_git
+  fi
+  
   # التحقق مما إذا كان المستودع موجودًا بالفعل
   if [ ! -d ".git" ]; then
     print_color "$YELLOW" "تهيئة مستودع Git..."
@@ -400,16 +773,30 @@ EOL
   check_success "تم إنشاء tag للإصدار"
   
   # إنشاء إصدار على GitHub (إذا كان gh CLI متاحًا)
-  if command -v gh &> /dev/null; then
+  if check_command gh; then
     print_color "$YELLOW" "إنشاء إصدار على GitHub..."
     gh release create v$VERSION release/wolf-app.apk -F release/RELEASE_NOTES.md -t "تطبيق WOLF v$VERSION"
     check_success "تم إنشاء إصدار على GitHub"
   else
     print_color "$YELLOW" "GitHub CLI (gh) غير متاح. يرجى إنشاء الإصدار يدويًا على GitHub."
+    
+    # هل ترغب في تثبيت GitHub CLI؟
+    print_color "$YELLOW" "هل ترغب في تثبيت GitHub CLI الآن؟ (y/n)"
+    read install_gh_now
+    
+    if [ "$install_gh_now" = "y" ] || [ "$install_gh_now" = "Y" ]; then
+      install_github_cli
+      
+      if check_command gh; then
+        print_color "$YELLOW" "إنشاء إصدار على GitHub..."
+        gh release create v$VERSION release/wolf-app.apk -F release/RELEASE_NOTES.md -t "تطبيق WOLF v$VERSION"
+        check_success "تم إنشاء إصدار على GitHub"
+      fi
+    fi
   fi
 fi
 
-print_color "$GREEN" "=== تم الانتهاء بنجاح! ==="
+print_header "تم الانتهاء بنجاح!" "$GREEN"
 print_color "$GREEN" "تم بناء تطبيق WOLF بنجاح مع ميزات أمان متقدمة ودعم لمفاتيح API مخصصة"
 print_color "$YELLOW" "APK موجود في: $(pwd)/release/wolf-app.apk"
 print_color "$YELLOW" "معلومات التواصل: sa6aa6116@gmail.com / +96894165819"
