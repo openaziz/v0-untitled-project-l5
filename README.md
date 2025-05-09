@@ -1,30 +1,83 @@
-# دمج الصوره مع التصميم
+# WOLF AI - واجهة المستخدم الذكية
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+<p align="center">
+  <img src="public/images/wolf-logo.png" alt="WOLF Logo" width="120" />
+</p>
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/hoor83850-gmailcoms-projects/v0-dmj-alswrh-me-altsmym)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/UrzyUDqPx0Y)
+<p align="center">
+  مساعد ذكي متقدم مع قدرات تفكير عميق وبحث على الويب وتوليد الكود
+</p>
 
-## Overview
+## المميزات
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+- **التفكير العميق**: عرض مرئي لعملية التفكير خطوة بخطوة
+- **البحث على الويب**: واجهة بحث متقدمة مع خيارات تصفية وعرض
+- **توليد الكود**: إنشاء كود برمجي مع إمكانية تصديره بتنسيقات متعددة
+- **تكامل Visual Studio**: فتح الكود مباشرة في Visual Studio
+- **تكامل Google Gemini**: استخدام نماذج Google Gemini المتقدمة
 
-## Deployment
+## التقنيات المستخدمة
 
-Your project is live at:
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Shadcn UI
+- Google Gemini API
 
-**[https://vercel.com/hoor83850-gmailcoms-projects/v0-dmj-alswrh-me-altsmym](https://vercel.com/hoor83850-gmailcoms-projects/v0-dmj-alswrh-me-altsmym)**
+## البدء
 
-## Build your app
+### المتطلبات الأساسية
 
-Continue building your app on:
+- Node.js (الإصدار 18 أو أحدث)
+- مفتاح Google Gemini API
 
-**[https://v0.dev/chat/projects/UrzyUDqPx0Y](https://v0.dev/chat/projects/UrzyUDqPx0Y)**
+### التثبيت
 
-## How It Works
+1. استنساخ المستودع:
+\`\`\`bash
+git clone https://github.com/openaziz/automati.app.git
+cd automati.app
+\`\`\`
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+2. تثبيت التبعيات:
+\`\`\`bash
+npm install
+\`\`\`
+
+3. إنشاء ملف `.env.local` وإضافة متغيرات البيئة:
+\`\`\`
+GEMINI_API_KEY=your_gemini_api_key
+\`\`\`
+
+4. تشغيل الخادم المحلي:
+\`\`\`bash
+npm run dev
+\`\`\`
+
+5. افتح [http://localhost:3000](http://localhost:3000) في متصفحك لمشاهدة التطبيق.
+
+## الاستخدام
+
+1. **المحادثة**: اطرح أسئلتك واحصل على إجابات ذكية
+2. **توليد الكود**: اطلب كتابة كود برمجي وشاهد النتائج في علامة تبويب الكود
+3. **التفكير العميق**: شاهد عملية التفكير خطوة بخطوة في علامة تبويب التفكير العميق
+4. **البحث على الويب**: استخدم علامة تبويب البحث للحصول على معلومات من الإنترنت
+
+## المساهمة
+
+نرحب بمساهماتكم! يرجى اتباع الخطوات التالية:
+
+1. افتح issue لمناقشة التغيير الذي ترغب في إجرائه
+2. قم بعمل fork للمستودع
+3. أنشئ فرعًا جديدًا (`git checkout -b feature/amazing-feature`)
+4. قم بإجراء تغييراتك وارتكابها (`git commit -m 'Add some amazing feature'`)
+5. ادفع إلى الفرع (`git push origin feature/amazing-feature`)
+6. افتح طلب سحب
+
+## الترخيص
+
+هذا المشروع مرخص بموجب [MIT License](LICENSE).
+
+## الاتصال
+
+إذا كان لديك أي أسئلة أو اقتراحات، يرجى التواصل معنا عبر البريد الإلكتروني: support@automati.app
