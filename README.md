@@ -1,83 +1,78 @@
-# WOLF AI - واجهة المستخدم الذكية
+# تطبيق WOLF
 
-<p align="center">
-  <img src="public/images/wolf-logo.png" alt="WOLF Logo" width="120" />
-</p>
+تطبيق WOLF هو تطبيق متكامل للهواتف الذكية يوفر واجهة مستخدم سلسة وجذابة.
 
-<p align="center">
-  مساعد ذكي متقدم مع قدرات تفكير عميق وبحث على الويب وتوليد الكود
-</p>
+## الميزات
 
-## المميزات
+- واجهة مستخدم حديثة وجذابة
+- نظام تسجيل دخول متكامل
+- دعم للغة العربية
+- متوافق مع أجهزة Android
 
-- **التفكير العميق**: عرض مرئي لعملية التفكير خطوة بخطوة
-- **البحث على الويب**: واجهة بحث متقدمة مع خيارات تصفية وعرض
-- **توليد الكود**: إنشاء كود برمجي مع إمكانية تصديره بتنسيقات متعددة
-- **تكامل Visual Studio**: فتح الكود مباشرة في Visual Studio
-- **تكامل Google Gemini**: استخدام نماذج Google Gemini المتقدمة
+## التواصل
 
-## التقنيات المستخدمة
+للاستفسارات والدعم، يرجى التواصل:
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Shadcn UI
-- Google Gemini API
+- البريد الإلكتروني: sa6aa6116@gmail.com
+- الهاتف: +968 94165819
 
-## البدء
+## التثبيت
 
-### المتطلبات الأساسية
+1. قم بتنزيل أحدث إصدار من APK من صفحة [الإصدارات](https://github.com/yourusername/wolf-app/releases)
+2. قم بتثبيت التطبيق على جهازك
+3. ابدأ باستخدام تطبيق WOLF
 
-- Node.js (الإصدار 18 أو أحدث)
-- مفتاح Google Gemini API
+## التطوير
 
-### التثبيت
-
-1. استنساخ المستودع:
 \`\`\`bash
-git clone https://github.com/openaziz/automati.app.git
-cd automati.app
-\`\`\`
-
-2. تثبيت التبعيات:
-\`\`\`bash
+# تثبيت التبعيات
 npm install
-\`\`\`
 
-3. إنشاء ملف `.env.local` وإضافة متغيرات البيئة:
-\`\`\`
-GEMINI_API_KEY=your_gemini_api_key
-\`\`\`
-
-4. تشغيل الخادم المحلي:
-\`\`\`bash
+# تشغيل خادم التطوير
 npm run dev
+
+# بناء للإنتاج
+npm run build
+
+# بناء تطبيق Android
+npm run build-android-release
 \`\`\`
 
-5. افتح [http://localhost:3000](http://localhost:3000) في متصفحك لمشاهدة التطبيق.
+## خطوات تحويل التطبيق إلى APK
 
-## الاستخدام
+1. تثبيت التبعيات:
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-1. **المحادثة**: اطرح أسئلتك واحصل على إجابات ذكية
-2. **توليد الكود**: اطلب كتابة كود برمجي وشاهد النتائج في علامة تبويب الكود
-3. **التفكير العميق**: شاهد عملية التفكير خطوة بخطوة في علامة تبويب التفكير العميق
-4. **البحث على الويب**: استخدم علامة تبويب البحث للحصول على معلومات من الإنترنت
+2. إضافة منصة Android:
+   \`\`\`bash
+   npx cap add android
+   \`\`\`
 
-## المساهمة
+3. بناء وتصدير المشروع:
+   \`\`\`bash
+   npm run build
+   npm run export
+   \`\`\`
 
-نرحب بمساهماتكم! يرجى اتباع الخطوات التالية:
+4. مزامنة الملفات مع Capacitor:
+   \`\`\`bash
+   npx cap sync
+   \`\`\`
 
-1. افتح issue لمناقشة التغيير الذي ترغب في إجرائه
-2. قم بعمل fork للمستودع
-3. أنشئ فرعًا جديدًا (`git checkout -b feature/amazing-feature`)
-4. قم بإجراء تغييراتك وارتكابها (`git commit -m 'Add some amazing feature'`)
-5. ادفع إلى الفرع (`git push origin feature/amazing-feature`)
-6. افتح طلب سحب
+5. بناء APK:
+   \`\`\`bash
+   cd android
+   ./gradlew assembleRelease
+   \`\`\`
 
-## الترخيص
+6. توقيع APK:
+   \`\`\`bash
+   keytool -genkey -v -keystore wolf.keystore -alias wolf -keyalg RSA -keysize 2048 -validity 10000
+   \`\`\`
 
-هذا المشروع مرخص بموجب [MIT License](LICENSE).
-
-## الاتصال
-
-إذا كان لديك أي أسئلة أو اقتراحات، يرجى التواصل معنا عبر البريد الإلكتروني: support@automati.app
+7. استخدام السكربت الشامل:
+   \`\`\`bash
+   chmod +x build-and-deploy.sh
+   ./build-and-deploy.sh
