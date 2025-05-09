@@ -3,14 +3,21 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { prompt, systemPrompt, model = "gemini-2.0-flash", maxTokens = 1024, temperature = 0.7 } = body
+    const {
+      prompt,
+      systemPrompt,
+      model = "gemini-2.0-flash",
+      maxTokens = 1024,
+      temperature = 0.7,
+      customApiKey = null,
+    } = body
 
-    // استخدام مفتاح API من متغيرات البيئة على جانب الخادم
-    const apiKey = process.env.GEMINI_API_KEY
+    // استخدام مفتاح API المخصص أو مفتاح API من متغيرات البيئة
+    const apiKey = customApiKey || process.env.GEMINI_API_KEY
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "مفتاح API غير متوفر. يرجى تكوين متغير البيئة GEMINI_API_KEY." },
+        { error: "مفتاح API غير متوفر. يرجى تكوين متغير البيئة GEMINI_API_KEY أو توفير مفتاح API مخصص." },
         { status: 500 },
       )
     }

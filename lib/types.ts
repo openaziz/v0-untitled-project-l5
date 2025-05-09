@@ -7,3 +7,21 @@ export interface BotSettings {
   language: string
   voiceEnabled: boolean
 }
+
+// واجهة خدمة التشفير
+export interface EncryptionService {
+  encrypt(data: string): string
+  decrypt(encryptedData: string): string
+}
+
+// واجهة خدمة الأمان
+export interface SecurityService {
+  encryptionService?: EncryptionService
+}
+
+// تعريف النافذة العالمية
+declare global {
+  interface Window {
+    securityService?: SecurityService
+  }
+}

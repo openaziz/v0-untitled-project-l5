@@ -38,7 +38,57 @@ export function saveGeminiConfigState(isConfigured: boolean): void {
 // الحصول على مفتاح Gemini API من التخزين المحلي
 export function getGeminiApiKey(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("geminiApiKey")
+    const encryptedKey = localStorage.getItem("geminiApiKey")
+    if (!encryptedKey) return null
+
+    // فك تشفير المفتاح إذا كانت خدمة التشفير متاحة
+    try {
+      return window.securityService?.encryptionService?.decrypt(encryptedKey) || encryptedKey
+    } catch (error) {
+      console.error("خطأ في فك تشفير مفتاح API:", error)
+      return encryptedKey
+    }
   }
   return null
+}
+
+// حفظ مفتاح Gemini API في التخزين المحلي
+export function saveGeminiApiKey(apiKey: string): void {
+  if (typeof window !== "undefined") {
+    // استخدام خدمة التشفير إذا كانت متاحة
+    try {
+      const encryptedKey = window.securityService?.encryptionService?.encrypt(apiKey) || apiKey
+      localStorage.setItem("geminiApiKey", encryptedKey)
+      saveGeminiConfigState(true)
+    } catch (error) {
+      console.error("خطأ في تشفير مفتاح API:", error)
+      localStorage.setItem("geminiApiKey", apiKey)
+      saveGeminiConfigState(true)
+    }
+  }
+}
+
+// حذف مفتاح Gemini API من التخزين المحلي
+export function removeGeminiApiKey(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("geminiApiKey")
+    saveGeminiConfigState(false)
+  }
+}
+
+// التحقق من صحة مفتاح API
+export async function validateGeminiApiKey(apiKey: string): Promise<boolean> {
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+
+    return response.ok
+  } catch (error) {
+    console.error("خطأ في التحقق من مفتاح API:", error)
+    return false
+  }
 }

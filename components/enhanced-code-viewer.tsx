@@ -21,10 +21,33 @@ export function EnhancedCodeViewer({ code, language, onOpenInVisualStudio }: Enh
   const [lineNumbers, setLineNumbers] = useState(true)
   const [wordWrap, setWordWrap] = useState(true)
   const [formattedCode, setFormattedCode] = useState(code)
+  const [htmlPreview, setHtmlPreview] = useState<string>("")
+  const [canPreview, setCanPreview] = useState(false)
 
   useEffect(() => {
     // محاكاة تنسيق الكود
     setFormattedCode(formatCode(code, language))
+
+    // التحقق مما إذا كان يمكن معاينة الكود
+    const previewableLanguages = ["html", "jsx", "tsx"]
+    setCanPreview(previewableLanguages.includes(language.toLowerCase()))
+
+    // إعداد معاينة HTML
+    if (previewableLanguages.includes(language.toLowerCase())) {
+      let processedHtml = code
+
+      // معالجة JSX/TSX إلى HTML (محاكاة بسيطة)
+      if (language === "jsx" || language === "tsx") {
+        processedHtml = processJsxToHtml(code)
+      }
+
+      // تنظيف الكود وإزالة العلامات الخطرة
+      const sanitizedHtml = processedHtml
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+        .replace(/on\w+="[^"]*"/g, "")
+
+      setHtmlPreview(sanitizedHtml)
+    }
   }, [code, language])
 
   const formatCode = (code: string, language: string): string => {
@@ -38,6 +61,17 @@ export function EnhancedCodeViewer({ code, language, onOpenInVisualStudio }: Enh
         .replace(/\n\s*\n/g, "\n")
     }
     return code
+  }
+
+  // محاكاة بسيطة لتحويل JSX إلى HTML
+  const processJsxToHtml = (jsxCode: string): string => {
+    // هذه محاكاة بسيطة جدًا - في التطبيق الحقيقي ستحتاج إلى محلل JSX حقيقي
+    return jsxCode
+      .replace(/className=/g, "class=")
+      .replace(/\{\/\*.*?\*\/\}/g, "") // إزالة التعليقات
+      .replace(/\{(.*?)\}/g, "") // إزالة التعبيرات البرمجية
+      .replace(/<>/g, "<div>") // استبدال الشظايا
+      .replace(/<\/>/g, "</div>") // استبدال الشظايا
   }
 
   const handleCopy = () => {
@@ -199,7 +233,7 @@ ${code}
               <Code2 className="h-4 w-4" />
               <span>الكود</span>
             </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-1">
+            <TabsTrigger value="preview" className="flex items-center gap-1" disabled={!canPreview}>
               <FileText className="h-4 w-4" />
               <span>المعاينة</span>
             </TabsTrigger>
@@ -309,41 +343,23 @@ ${code}
 
         <TabsContent value="preview" className="h-full">
           <div className="bg-white text-black p-4 rounded-lg h-full overflow-auto">
-            <CodePreview code={code} language={language} />
+            {canPreview ? (
+              <div>
+                <div className="text-center p-2 bg-gray-100 mb-4 rounded">معاينة HTML</div>
+                <div
+                  className="html-preview border border-gray-200 p-4 rounded"
+                  dangerouslySetInnerHTML={{ __html: htmlPreview }}
+                />
+              </div>
+            ) : (
+              <div className="text-center p-4">
+                <p className="text-gray-500">المعاينة غير متاحة للغة {language.toUpperCase()}</p>
+                <p className="text-sm mt-2">المعاينة متاحة فقط لكود HTML و JSX و TSX</p>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
     </div>
   )
-}
-
-// مكون معاينة الكود
-function CodePreview({ code, language }: { code: string; language: string }) {
-  // محاكاة معاينة الكود
-  if (language === "html" || language === "jsx" || language === "tsx") {
-    return (
-      <div className="text-center p-4">
-        <p className="text-gray-500 mb-4">معاينة الكود (محاكاة)</p>
-        <div className="border border-gray-300 rounded-lg p-4 min-h-[200px]">
-          {code.includes("<button") ? (
-            <button className="bg-blue-500 text-white px-4 py-2 rounded">زر المعاينة</button>
-          ) : code.includes("<input") ? (
-            <input type="text" className="border border-gray-300 rounded px-3 py-2 w-full" placeholder="حقل إدخال" />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full">
-              <p>معاينة العناصر</p>
-              <p className="text-sm text-gray-500 mt-2">يتم عرض معاينة تقريبية للكود</p>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  } else {
-    return (
-      <div className="text-center p-4">
-        <p className="text-gray-500">المعاينة غير متاحة للغة {language.toUpperCase()}</p>
-        <p className="text-sm mt-2">المعاينة متاحة فقط لكود HTML و JSX و TSX</p>
-      </div>
-    )
-  }
 }

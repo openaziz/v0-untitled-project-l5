@@ -3,6 +3,7 @@
 import { GeminiService } from "./gemini-service"
 import { VisualStudioService } from "./visual-studio-service"
 import { MindMapGenerator } from "./mind-map-generator"
+import { memoize } from "./performance-utils"
 
 /**
  * معالج الذكاء الاصطناعي المحسن
@@ -20,6 +21,10 @@ export class AIProcessor {
   private geminiService: GeminiService
   private visualStudioService: VisualStudioService
   private mindMapGenerator: MindMapGenerator
+  private cache: Map<string, any> = new Map()
+  private processingQueue: Array<() => Promise<void>> = []
+  private isProcessing = false
+  private maxConcurrentProcessing = 2
 
   constructor() {
     // تحميل شخصية البوت المحفوظة إذا كانت متوفرة
@@ -60,111 +65,159 @@ export class AIProcessor {
     this.geminiService = new GeminiService()
     this.visualStudioService = new VisualStudioService()
     this.mindMapGenerator = new MindMapGenerator()
+
+    // تحسين الأداء: استخدام memoize للوظائف المتكررة
+    this.analyzeQueryType = memoize(this.analyzeQueryType.bind(this))
+    this.cleanResponseFormatting = memoize(this.cleanResponseFormatting.bind(this))
   }
 
   /**
    * معالجة استعلام المستخدم وتوليد استجابة
    */
   async processQuery(query: string): Promise<string> {
-    // محاكاة وقت المعالجة
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    // التحقق من وجود الاستعلام في ذاكرة التخزين المؤقت
+    const cacheKey = `query_${this.personality}_${query}`
+    if (this.cache.has(cacheKey)) {
+      console.log("استخدام الاستجابة المخزنة مؤقتًا")
+      return this.cache.get(cacheKey)
+    }
 
-    // استخدام Google Gemini إذا كان مفعلاً
-    if (this.useGemini) {
-      try {
-        console.log("استخدام Google Gemini لمعالجة الاستعلام")
+    // إضافة المهمة إلى قائمة الانتظار
+    return new Promise<string>((resolve) => {
+      this.processingQueue.push(async () => {
+        try {
+          // محاكاة وقت المعالجة
+          await new Promise((r) => setTimeout(r, 1500))
 
-        // إضافة توجيه النظام بناءً على شخصية البوت
-        const systemPrompt = `
-        ${this.getSystemPromptForPersonality()}
-        
-        # إرشادات التنسيق
-        - استخدم عناوين واضحة مع علامات # و ## للتنظيم
-        - قسم المحتوى إلى فقرات قصيرة ومركزة
-        - استخدم قوائم مرقمة للخطوات والإجراءات
-        - استخدم قوائم نقطية للميزات والنقاط المهمة
-        - أضف ملاحظات وتحذيرات عند الحاجة بصيغة "ملاحظة:" أو "تحذير:"
-        - تجنب استخدام علامات النجمة (**) للتنسيق
-        - قدم إجابات مباشرة ومختصرة وعملية
-        - ركز على الحلول العملية والخطوات المحددة
-        - استخدم لغة واضحة وبسيطة
-        `
+          // استخدام Google Gemini إذا كان مفعلاً
+          if (this.useGemini) {
+            try {
+              console.log("استخدام Google Gemini لمعالجة الاستعلام")
 
-        // استخدام Gemini لتوليد الاستجابة
-        const response = await this.geminiService.generateContent(query, systemPrompt)
+              // إضافة توجيه النظام بناءً على شخصية البوت
+              const systemPrompt = `
+              ${this.getSystemPromptForPersonality()}
+              
+              # إرشادات التنسيق
+              - استخدم عناوين واضحة مع علامات # و ## للتنظيم
+              - قسم المحتوى إلى فقرات قصيرة ومركزة
+              - استخدم قوائم مرقمة للخطوات والإجراءات
+              - استخدم قوائم نقطية للميزات والنقاط المهمة
+              - أضف ملاحظات وتحذيرات عند الحاجة بصيغة "ملاحظة:" أو "تحذير:"
+              - تجنب استخدام علامات النجمة (**) للتنسيق
+              - قدم إجابات مباشرة ومختصرة وعملية
+              - ركز على الحلول العملية والخطوات المحددة
+              - استخدم لغة واضحة وبسيطة
+              `
 
-        // تنظيف النص من علامات النجمة وتحسين التنسيق
-        const cleanedResponse = this.cleanResponseFormatting(response)
+              // استخدام Gemini لتوليد الاستجابة
+              const response = await this.geminiService.generateContent(query, systemPrompt)
 
-        // تحليل نوع الاستعلام
-        const queryType = this.analyzeQueryType(query)
+              // تنظيف النص من علامات النجمة وتحسين التنسيق
+              const cleanedResponse = this.cleanResponseFormatting(response)
 
-        // إذا كان الاستعلام يتعلق بالبرمجة، قم بفتح Visual Studio
-        if (queryType === "programming" && this.useVisualStudio) {
-          // توليد الكود باستخدام Gemini
-          const codeResult = await this.geminiService.generateCode(query)
+              // تحليل نوع الاستعلام
+              const queryType = this.analyzeQueryType(query)
 
-          // فتح الكود في Visual Studio
-          this.visualStudioService.openInVisualStudio(codeResult.code, codeResult.language)
+              // إذا كان الاستعلام يتعلق بالتصميم أو التخطيط، قم بإنشاء خريطة ذهنية
+              if ((queryType === "design" || queryType === "planning") && this.useMindMaps) {
+                // توليد خريطة ذهنية
+                await this.mindMapGenerator.generateMindMap(query, cleanedResponse)
+              }
+
+              // تخزين الاستجابة في ذاكرة التخزين المؤقت
+              this.cache.set(cacheKey, cleanedResponse)
+
+              resolve(cleanedResponse)
+              return
+            } catch (error) {
+              console.error("خطأ في استخدام Gemini:", error)
+              // في حالة فشل Gemini، استخدم الطريقة الاحتياطية
+            }
+          }
+
+          // تحليل نوع الاستعلام
+          const queryType = this.analyzeQueryType(query)
+
+          // توليد استجابة بناءً على نوع الاستعلام
+          let response = ""
+          switch (queryType) {
+            case "programming":
+              response = this.generateProgrammingResponse(query)
+              break
+            case "data_analysis":
+              response = this.generateDataAnalysisResponse(query)
+              break
+            case "content_creation":
+              response = this.generateContentResponse(query)
+              break
+            case "design":
+              response = this.generateDesignResponse(query)
+
+              // إنشاء خريطة ذهنية إذا كان مفعلاً
+              if (this.useMindMaps) {
+                this.mindMapGenerator.generateMindMap(query, response)
+              }
+              break
+            case "planning":
+              response = this.generatePlanningResponse(query)
+
+              // إنشاء خريطة ذهنية إذا كان مفعلاً
+              if (this.useMindMaps) {
+                this.mindMapGenerator.generateMindMap(query, response)
+              }
+              break
+            default:
+              response = this.generateGeneralResponse(query)
+          }
+
+          // تطبيق شخصية البوت على الاستجابة
+          const finalResponse = this.applyPersonality(response)
+
+          // تخزين الاستجابة في ذاكرة التخزين المؤقت
+          this.cache.set(cacheKey, finalResponse)
+
+          resolve(finalResponse)
+        } catch (error) {
+          console.error("خطأ في معالجة الاستعلام:", error)
+          resolve("عذراً، حدث خطأ أثناء معالجة الاستعلام. يرجى المحاولة مرة أخرى.")
+        } finally {
+          // إزالة المهمة من قائمة الانتظار
+          this.processNextInQueue()
         }
+      })
 
-        // إذا كان الاستعلام يتعلق بالتصميم أو التخطيط، قم بإنشاء خريطة ذهنية
-        if ((queryType === "design" || queryType === "planning") && this.useMindMaps) {
-          // توليد خريطة ذهنية
-          await this.mindMapGenerator.generateMindMap(query, cleanedResponse)
-        }
-
-        return cleanedResponse
-      } catch (error) {
-        console.error("خطأ في استخدام Gemini:", error)
-        // في حالة فشل Gemini، استخدم الطريقة الاحتياطية
+      // بدء معالجة المهام إذا لم تكن قيد التنفيذ بالفعل
+      if (!this.isProcessing) {
+        this.processNextInQueue()
       }
+    })
+  }
+
+  /**
+   * معالجة المهمة التالية في قائمة الانتظار
+   */
+  private async processNextInQueue(): Promise<void> {
+    if (this.processingQueue.length === 0) {
+      this.isProcessing = false
+      return
     }
 
-    // تحليل نوع الاستعلام
-    const queryType = this.analyzeQueryType(query)
+    this.isProcessing = true
 
-    // توليد استجابة بناءً على نوع الاستعلام
-    let response = ""
-    switch (queryType) {
-      case "programming":
-        response = this.generateProgrammingResponse(query)
+    // تحديد عدد المهام التي سيتم معالجتها بالتوازي
+    const tasksToProcess = Math.min(this.maxConcurrentProcessing, this.processingQueue.length)
+    const currentTasks = this.processingQueue.splice(0, tasksToProcess)
 
-        // فتح Visual Studio إذا كان مفعلاً
-        if (this.useVisualStudio) {
-          console.log("فتح الكود في Visual Studio")
-          const sampleCode = this.generateSampleCode(query)
-          this.visualStudioService.openInVisualStudio(sampleCode, "javascript")
-        }
-        break
-      case "data_analysis":
-        response = this.generateDataAnalysisResponse(query)
-        break
-      case "content_creation":
-        response = this.generateContentResponse(query)
-        break
-      case "design":
-        response = this.generateDesignResponse(query)
+    // معالجة المهام بالتوازي
+    await Promise.all(currentTasks.map((task) => task()))
 
-        // إنشاء خريطة ذهنية إذا كان مفعلاً
-        if (this.useMindMaps) {
-          this.mindMapGenerator.generateMindMap(query, response)
-        }
-        break
-      case "planning":
-        response = this.generatePlanningResponse(query)
-
-        // إنشاء خريطة ذهنية إذا كان مفعلاً
-        if (this.useMindMaps) {
-          this.mindMapGenerator.generateMindMap(query, response)
-        }
-        break
-      default:
-        response = this.generateGeneralResponse(query)
+    // معالجة المهام المتبقية
+    if (this.processingQueue.length > 0) {
+      this.processNextInQueue()
+    } else {
+      this.isProcessing = false
     }
-
-    // تطبيق شخصية البوت على الاستجابة
-    return this.applyPersonality(response)
   }
 
   // إضافة دالة جديدة لتنسيق الاستجابة
@@ -215,38 +268,57 @@ export class AIProcessor {
    * تنفيذ التفكير العميق
    */
   async performDeepThinking(query: string): Promise<string[]> {
+    // التحقق من وجود الاستعلام في ذاكرة التخزين المؤقت
+    const cacheKey = `thinking_${query}`
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)
+    }
+
     if (this.useGemini && this.useDeepThinking) {
       try {
-        return await this.geminiService.deepThinking(query)
+        const steps = await this.geminiService.deepThinking(query)
+        this.cache.set(cacheKey, steps)
+        return steps
       } catch (error) {
         console.error("خطأ في التفكير العميق باستخدام Gemini:", error)
       }
     }
 
     // طريقة احتياطية للتفكير العميق
-    return [
+    const defaultSteps = [
       "تحليل السؤال وفهم المتطلبات...",
       "البحث في قاعدة المعرفة عن معلومات ذات صلة...",
       "تحديد المفاهيم الرئيسية والعلاقات بينها...",
       "تطبيق المنطق الاستنتاجي للوصول إلى إجابة...",
       "صياغة الإجابة بطريقة واضحة ومفهومة...",
     ]
+
+    this.cache.set(cacheKey, defaultSteps)
+    return defaultSteps
   }
 
   /**
    * تنفيذ البحث على الويب
    */
   async performWebSearch(query: string): Promise<WebSearchResult[]> {
+    // التحقق من وجود الاستعلام في ذاكرة التخزين المؤقت
+    const cacheKey = `search_${query}`
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)
+    }
+
     if (this.useGemini && this.useWebResearch) {
       try {
-        return await this.geminiService.webSearch(query)
+        const results = await this.geminiService.webSearch(query)
+        this.cache.set(cacheKey, results)
+        return results
       } catch (error) {
         console.error("خطأ في البحث على الويب باستخدام Gemini:", error)
       }
     }
 
     // طريقة احتياطية للبحث على الويب
-    return [
+    const defaultResults = [
       {
         id: "1",
         title: "نتائج البحث الأولى حول " + query,
@@ -266,26 +338,40 @@ export class AIProcessor {
         snippet: "بيانات محدثة ومعلومات جديدة تم نشرها مؤخراً...",
       },
     ]
+
+    this.cache.set(cacheKey, defaultResults)
+    return defaultResults
   }
 
   /**
    * توليد كود برمجي
    */
   async generateCodeForQuery(query: string, language = "javascript"): Promise<CodeGenerationResult> {
+    // التحقق من وجود الاستعلام في ذاكرة التخزين المؤقت
+    const cacheKey = `code_${query}_${language}`
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)
+    }
+
     if (this.useGemini) {
       try {
-        return await this.geminiService.generateCode(query, language)
+        const result = await this.geminiService.generateCode(query, language)
+        this.cache.set(cacheKey, result)
+        return result
       } catch (error) {
         console.error("خطأ في توليد الكود باستخدام Gemini:", error)
       }
     }
 
     // طريقة احتياطية لتوليد الكود
-    return {
+    const defaultResult = {
       code: this.generateSampleCode(query),
       language,
       prompt: query,
     }
+
+    this.cache.set(cacheKey, defaultResult)
+    return defaultResult
   }
 
   /**
@@ -745,6 +831,22 @@ console.log(result);`
         .replace(/رائع/g, "مذهل بشكل لا يصدق... على الأقل هذا ما يقولونه") +
       "\n\n## ختاماً...\n\nآمل أن هذا كان مفيداً بما فيه الكفاية... أو على الأقل أفضل من البحث في جوجل. 😏"
     )
+  }
+
+  /**
+   * تنظيف ذاكرة التخزين المؤقت
+   */
+  clearCache(): void {
+    this.cache.clear()
+    console.log("تم تنظيف ذاكرة التخزين المؤقت")
+  }
+
+  /**
+   * تعيين الحد الأقصى للمعالجة المتزامنة
+   */
+  setMaxConcurrentProcessing(max: number): void {
+    this.maxConcurrentProcessing = max
+    console.log(`تم تعيين الحد الأقصى للمعالجة المتزامنة إلى ${max}`)
   }
 }
 

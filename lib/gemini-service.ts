@@ -31,6 +31,9 @@ export class GeminiService {
         ? `${systemPrompt}\n\n${formattingInstructions}`
         : formattingInstructions
 
+      // الحصول على مفتاح API المخصص من التخزين المحلي
+      const customApiKey = typeof window !== "undefined" ? localStorage.getItem("geminiApiKey") : null
+
       const response = await fetch(GEMINI_API_ENDPOINT, {
         method: "POST",
         headers: {
@@ -42,6 +45,7 @@ export class GeminiService {
           model: this.config.model,
           maxTokens: this.config.maxTokens,
           temperature: this.config.temperature,
+          customApiKey,
         }),
       })
 

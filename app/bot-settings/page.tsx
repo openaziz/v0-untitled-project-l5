@@ -2,16 +2,18 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { X, Check } from "lucide-react"
+import { X, Check, Key } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
+import { GeminiApiKeyDialog } from "@/components/gemini-api-key-dialog"
 import type { BotPersonality } from "@/lib/types"
 
 export default function BotSettingsPage() {
   const router = useRouter()
   const [personality, setPersonality] = useState<BotPersonality>("neutral")
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false)
 
   const handleSave = () => {
     // حفظ إعدادات البوت
@@ -80,6 +82,18 @@ export default function BotSettingsPage() {
           </RadioGroup>
         </Card>
 
+        <Card className="bg-zinc-800 p-4 rounded-lg mb-6">
+          <h2 className="text-lg font-semibold mb-4">إعدادات Google Gemini API</h2>
+          <p className="text-sm text-gray-300 mb-4">
+            يمكنك استخدام مفتاح API الخاص بك لـ Google Gemini للحصول على أفضل أداء وتخصيص.
+          </p>
+
+          <Button variant="outline" className="flex items-center gap-2" onClick={() => setShowApiKeyDialog(true)}>
+            <Key className="h-4 w-4" />
+            <span>إعداد مفتاح API</span>
+          </Button>
+        </Card>
+
         <Card className="bg-zinc-800 p-4 rounded-lg">
           <h2 className="text-lg font-semibold mb-4">طريقة طرح السؤال للبوت</h2>
           <div className="space-y-4 text-sm text-gray-300">
@@ -108,6 +122,7 @@ export default function BotSettingsPage() {
           </div>
         </Card>
       </div>
+      {showApiKeyDialog && <GeminiApiKeyDialog onClose={() => setShowApiKeyDialog(false)} />}
     </div>
   )
 }
